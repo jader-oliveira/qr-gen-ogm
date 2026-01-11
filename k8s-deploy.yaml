@@ -1,0 +1,81 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: qr-generator-ogm
+  namespace: breutech
+  labels:
+    app: qr-generator-ogm
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: qr-generator-ogm
+  template:
+    metadata:
+      labels:
+        app: qr-generator-ogm
+    spec:
+      containers:
+        - name: qr-generator-ogm
+          image: jaderoliver/qr-gen-ogm:0.0.7
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8501
+          livenessProbe:
+            httpGet:
+              path: /_stcore/health
+              port: 8501
+              scheme: HTTP
+            timeoutSeconds: 1
+          readinessProbe:
+            httpGet:
+              path: /_stcore/health
+              port: 8501
+              scheme: HTTP
+            timeoutSeconds: 1
+          resources:
+            limits:
+              cpu: 650m
+              memory: 1Gi
+            requests:
+              cpu: 100m
+              memory: 745Mi
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: svc-qr-generator
+  namespace: breutech
+spec:
+  ports:
+  - name: http
+    port: 80
+    targetPort: 8501
+  selector:
+    app: qr-generator-ogm
+
+---
+
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: qr-generator-ogm
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+  namespace: breutech
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: qrcodegen.breutech-solutions.be
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: svc-qr-generator
+            port:
+              number: 80
