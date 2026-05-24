@@ -58,24 +58,19 @@ spec:
 
 ---
 
-apiVersion: networking.k8s.io/v1
-kind: Ingress
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
 metadata:
   name: qr-generator-ogm
-  annotations:
-    nginx.ingress.kubernetes.io/ssl-redirect: "false"
-    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
   namespace: breutech
 spec:
-  ingressClassName: nginx
+  parentRefs:
+  - name: breutech
+    namespace: ingress
+    sectionName: https
+  hostnames:
+  - qrcodegen.breutech-solutions.be
   rules:
-  - host: qrcodegen.breutech-solutions.be
-    http:
-      paths:
-      - path: /
-        pathType: Prefix
-        backend:
-          service:
-            name: svc-qr-generator
-            port:
-              number: 80
+  - backendRefs:
+    - name: svc-qr-generator
+      port: 80
